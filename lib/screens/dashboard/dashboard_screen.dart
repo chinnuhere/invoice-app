@@ -133,7 +133,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                             physics: const NeverScrollableScrollPhysics(),
                             mainAxisSpacing: AppConstants.spacing16,
                             crossAxisSpacing: AppConstants.spacing16,
-                            childAspectRatio: 1.2,
+                            childAspectRatio: 0.95,
                             children: [
                               _buildStatCard(
                                 context,
@@ -276,11 +276,15 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
           const SizedBox(height: AppConstants.spacing4),
-          Text(
-            value,
-            style: AppTextStyles.headlineSmall.copyWith(
-              color: theme.colorScheme.onSurface,
-              fontWeight: FontWeight.bold,
+          FittedBox(
+            fit: BoxFit.scaleDown,
+            alignment: Alignment.centerLeft,
+            child: Text(
+              value,
+              style: AppTextStyles.headlineSmall.copyWith(
+                color: theme.colorScheme.onSurface,
+                fontWeight: FontWeight.bold,
+              ),
             ),
           ),
           const SizedBox(height: AppConstants.spacing4),
