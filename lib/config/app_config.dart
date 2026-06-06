@@ -34,7 +34,7 @@ class AppConfig {
       case Environment.staging:
         return 'https://staging-api.invoiceapp.com';
       case Environment.production:
-        return 'https://api.invoiceapp.com';
+        return 'https://invoice-app-backend-o8wp.onrender.com';
     }
   }
   

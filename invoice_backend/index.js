@@ -33,6 +33,7 @@ const invoicesRoutes = require('./routes/invoicesRoutes');
 const expensesRoutes = require('./routes/expensesRoutes');
 const reportsRoutes = require('./routes/reportsRoutes');
 const businessProfileRoutes = require('./routes/businessProfileRoutes');
+const itemsRoutes = require('./routes/itemsRoutes');
 
 const app = express();
 const PORT = process.env.PORT || 8000;
@@ -49,6 +50,7 @@ app.use('/invoices', invoicesRoutes);
 app.use('/expenses', expensesRoutes);
 app.use('/reports', reportsRoutes);
 app.use('/business-profile', businessProfileRoutes);
+app.use('/items', itemsRoutes);
 
 // Global Error Handler Middleware
 app.use(errorMiddleware);

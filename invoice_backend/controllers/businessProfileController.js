@@ -39,6 +39,7 @@ const createBusinessProfile = async (req, res) => {
       bank_name,
       account_number,
       routing_number,
+      signature_data,
     } = req.body;
 
     if (!business_name) {
@@ -48,11 +49,11 @@ const createBusinessProfile = async (req, res) => {
     const result = await pool.query(
       `INSERT INTO business_profiles 
        (user_id, business_name, email, phone, address, city, state, zip, country, 
-        tax_id, registration_number, bank_name, account_number, routing_number)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14)
+        tax_id, registration_number, bank_name, account_number, routing_number, signature_data)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12, $13, $14, $15)
        RETURNING *`,
       [userId, business_name, email, phone, address, city, state, zip, country,
-       tax_id, registration_number, bank_name, account_number, routing_number]
+       tax_id, registration_number, bank_name, account_number, routing_number, signature_data]
     );
 
     res.status(201).json(result.rows[0]);
@@ -80,6 +81,7 @@ const updateBusinessProfile = async (req, res) => {
       bank_name,
       account_number,
       routing_number,
+      signature_data,
     } = req.body;
 
     if (!business_name) {
@@ -90,11 +92,11 @@ const updateBusinessProfile = async (req, res) => {
       `UPDATE business_profiles 
        SET business_name = $1, email = $2, phone = $3, address = $4, city = $5, 
            state = $6, zip = $7, country = $8, tax_id = $9, registration_number = $10,
-           bank_name = $11, account_number = $12, routing_number = $13, updated_at = CURRENT_TIMESTAMP
-       WHERE user_id = $14
+           bank_name = $11, account_number = $12, routing_number = $13, signature_data = $14, updated_at = CURRENT_TIMESTAMP
+       WHERE user_id = $15
        RETURNING *`,
       [business_name, email, phone, address, city, state, zip, country,
-       tax_id, registration_number, bank_name, account_number, routing_number, userId]
+       tax_id, registration_number, bank_name, account_number, routing_number, signature_data, userId]
     );
 
     if (result.rows.length === 0) {
