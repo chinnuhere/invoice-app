@@ -681,4 +681,66 @@ class ApiService {
       throw Exception("Network error: $e");
     }
   }
+
+  static Future<List<dynamic>> getItems() async {
+    try {
+      final token = await AuthService.getToken();
+      
+      final response = await http.get(
+        Uri.parse('${AppConfig.apiBaseUrl}/items'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+      ).timeout(AppConfig.apiTimeout);
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 200) {
+        return data;
+      } else {
+        throw Exception(data['error'] ?? 'Failed to fetch items');
+      }
+    } on http.ClientException {
+      throw Exception("Unable to connect to server");
+    } catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        throw Exception("Unable to connect to server");
+      }
+      throw Exception("Network error: $e");
+    }
+  }
+
+  static Future<Map<String, dynamic>> createItem(String name, double price) async {
+    try {
+      final token = await AuthService.getToken();
+      
+      final response = await http.post(
+        Uri.parse('${AppConfig.apiBaseUrl}/items'),
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': 'Bearer $token',
+        },
+        body: jsonEncode({
+          'name': name,
+          'price': price,
+        }),
+      ).timeout(AppConfig.apiTimeout);
+
+      final data = jsonDecode(response.body);
+
+      if (response.statusCode == 201) {
+        return data;
+      } else {
+        throw Exception(data['error'] ?? 'Failed to create item');
+      }
+    } on http.ClientException {
+      throw Exception("Unable to connect to server");
+    } catch (e) {
+      if (e.toString().contains('TimeoutException')) {
+        throw Exception("Unable to connect to server");
+      }
+      throw Exception("Network error: $e");
+    }
+  }
 }

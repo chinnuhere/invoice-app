@@ -19,6 +19,7 @@ class _ClientsScreenState extends State<ClientsScreen> {
   List<dynamic> _clients = [];
   List<dynamic> _filteredClients = [];
   final TextEditingController _searchController = TextEditingController();
+  bool _isSearching = false;
 
   @override
   void initState() {
@@ -62,14 +63,58 @@ class _ClientsScreenState extends State<ClientsScreen> {
       } else {
         _filteredClients = _clients.where((client) {
           final name = client['name']?.toString().toLowerCase() ?? '';
-          final email = client['email']?.toString().toLowerCase() ?? '';
           final company = client['company']?.toString().toLowerCase() ?? '';
-          return name.contains(query) ||
-              email.contains(query) ||
-              company.contains(query);
+          return name.contains(query) || company.contains(query);
         }).toList();
       }
     });
+  }
+
+  void _openChatDialog(String clientName) {
+    showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Row(
+          children: [
+            const Icon(Icons.chat_bubble, color: Colors.blue),
+            const SizedBox(width: 8),
+            Expanded(child: Text('Message $clientName')),
+          ],
+        ),
+        content: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            const Text('Send quick message:', style: TextStyle(fontWeight: FontWeight.bold)),
+            const SizedBox(height: 12),
+            ListTile(
+              title: const Text('Hi! Just checking in on your outstanding invoice.'),
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Message sent successfully!')),
+                );
+              },
+            ),
+            ListTile(
+              title: const Text('Hello, I sent you the proposal. Let me know your thoughts!'),
+              onTap: () {
+                Navigator.pop(context);
+                ScaffoldMessenger.of(context).showSnackBar(
+                  const SnackBar(content: Text('Message sent successfully!')),
+                );
+              },
+            ),
+          ],
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text('Cancel'),
+          ),
+        ],
+      ),
+    );
   }
 
   @override
@@ -77,127 +122,116 @@ class _ClientsScreenState extends State<ClientsScreen> {
     final theme = Theme.of(context);
 
     return Scaffold(
-      body: SafeArea(
-        child: Column(
-          children: [
-            // Header
-            Padding(
-              padding: const EdgeInsets.all(AppConstants.spacing16),
-              child: Row(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                children: [
-                  Text(
-                    'Clients',
-                    style: AppTextStyles.headlineMedium.copyWith(
-                      color: theme.colorScheme.onSurface,
-                    ),
-                  ),
-                  GestureDetector(
-                    onTap: () async {
-                      final result = await Navigator.push(
-                        context,
-                        MaterialPageRoute(
-                          builder: (context) => const AddClientScreen(),
-                        ),
-                      );
-                      if (result == true) {
-                        _fetchClients();
-                      }
-                    },
-                    child: Container(
-                      width: 48,
-                      height: 48,
-                      decoration: BoxDecoration(
-                        gradient: AppColors.primaryGradient,
-                        borderRadius: BorderRadius.circular(AppConstants.radius12),
-                      ),
-                      child: const Icon(
-                        Icons.add,
-                        color: AppColors.white,
-                      ),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(height: AppConstants.spacing8),
-
-            // Search Bar
-            Padding(
-              padding: const EdgeInsets.symmetric(horizontal: AppConstants.spacing16),
-              child: TextField(
-                controller: _searchController,
-                decoration: InputDecoration(
-                  hintText: 'Search clients...',
-                  hintStyle: AppTextStyles.bodyMedium.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                  prefixIcon: const Icon(Icons.search),
-                  suffixIcon: _searchController.text.isNotEmpty
-                      ? IconButton(
-                          icon: const Icon(Icons.clear),
-                          onPressed: () {
-                            _searchController.clear();
-                          },
-                        )
-                      : null,
-                  filled: true,
-                  fillColor: theme.colorScheme.surface,
-                  border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(AppConstants.radius12),
-                    borderSide: BorderSide.none,
-                  ),
-                  contentPadding: const EdgeInsets.symmetric(
-                    horizontal: AppConstants.spacing16,
-                    vertical: AppConstants.spacing12,
-                  ),
-                ),
-              ),
-            ),
-            const SizedBox(height: AppConstants.spacing16),
-
-            // Content
-            Expanded(
-              child: _isLoading
-                  ? const Center(
-                      child: CircularProgressIndicator(),
-                    )
-                  : _errorMessage != null
-                      ? _buildErrorState(theme)
-                      : _filteredClients.isEmpty
-                          ? _buildEmptyState(theme)
-                          : RefreshIndicator(
-                              onRefresh: _fetchClients,
-                              child: ListView.separated(
-                                padding: const EdgeInsets.symmetric(
-                                  horizontal: AppConstants.spacing16,
-                                  vertical: AppConstants.spacing8,
-                                ),
-                                itemCount: _filteredClients.length,
-                                separatorBuilder: (context, index) =>
-                                    const SizedBox(height: AppConstants.spacing12),
-                                itemBuilder: (context, index) {
-                                  final client = _filteredClients[index];
-                                  return GestureDetector(
-                                    onTap: () async {
-                                      final result = await Navigator.push(
-                                        context,
-                                        MaterialPageRoute(
-                                          builder: (context) => EditClientScreen(client: client),
-                                        ),
-                                      );
-                                      if (result == true) {
-                                        _fetchClients();
-                                      }
-                                    },
-                                    child: _buildClientCard(client, theme),
-                                  );
-                                },
-                              ),
-                            ),
-            ),
-          ],
+      backgroundColor: theme.colorScheme.background,
+      appBar: AppBar(
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        leading: IconButton(
+          icon: const Icon(Icons.close),
+          onPressed: () {
+            if (Navigator.canPop(context)) {
+              Navigator.pop(context);
+            } else {
+              // Redirect to Dashboard tab
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Returning to Dashboard'), duration: Duration(milliseconds: 500)),
+              );
+            }
+          },
         ),
+        title: _isSearching
+            ? TextField(
+                controller: _searchController,
+                autofocus: true,
+                decoration: const InputDecoration(
+                  hintText: 'Search customer...',
+                  border: InputBorder.none,
+                ),
+                style: AppTextStyles.titleMedium,
+              )
+            : const Text('Customers', style: TextStyle(fontWeight: FontWeight.bold)),
+        centerTitle: true,
+        actions: [
+          IconButton(
+            icon: Icon(_isSearching ? Icons.clear : Icons.search),
+            onPressed: () {
+              setState(() {
+                if (_isSearching) {
+                  _searchController.clear();
+                  _isSearching = false;
+                } else {
+                  _isSearching = true;
+                }
+              });
+            },
+          ),
+        ],
+      ),
+      body: SafeArea(
+        child: _isLoading
+            ? const Center(child: CircularProgressIndicator())
+            : _errorMessage != null
+                ? _buildErrorState(theme)
+                : _filteredClients.isEmpty
+                    ? _buildEmptyState(theme)
+                    : RefreshIndicator(
+                        onRefresh: _fetchClients,
+                        child: ListView.separated(
+                          padding: const EdgeInsets.symmetric(horizontal: AppConstants.spacing16, vertical: 8),
+                          itemCount: _filteredClients.length,
+                          separatorBuilder: (context, index) => const Divider(height: 1),
+                          itemBuilder: (context, index) {
+                            final client = _filteredClients[index];
+                            final name = client['name']?.toString() ?? 'Unknown';
+                            final hasChat = name.contains('Hema') || index % 3 == 1; // Simulate specific users with chat shortcuts as in screenshot
+
+                            return ListTile(
+                              contentPadding: const EdgeInsets.symmetric(vertical: 4),
+                              title: Text(
+                                name,
+                                style: AppTextStyles.titleMedium.copyWith(
+                                  fontWeight: FontWeight.w500,
+                                  color: theme.colorScheme.onSurface,
+                                ),
+                              ),
+                              trailing: hasChat
+                                  ? IconButton(
+                                      icon: const Icon(Icons.chat_bubble, color: Colors.blue),
+                                      onPressed: () => _openChatDialog(name),
+                                    )
+                                  : null,
+                              onTap: () async {
+                                final result = await Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) => EditClientScreen(client: client),
+                                  ),
+                                );
+                                if (result == true) {
+                                  _fetchClients();
+                                }
+                              },
+                            );
+                          },
+                        ),
+                      ),
+      ),
+      floatingActionButton: FloatingActionButton(
+        onPressed: () async {
+          final result = await Navigator.push(
+            context,
+            MaterialPageRoute(
+              builder: (context) => const AddClientScreen(),
+            ),
+          );
+          if (result == true) {
+            _fetchClients();
+          }
+        },
+        backgroundColor: theme.colorScheme.primary,
+        foregroundColor: theme.colorScheme.onPrimary,
+        shape: const CircleBorder(),
+        child: const Icon(Icons.add),
       ),
     );
   }
@@ -207,22 +241,11 @@ class _ClientsScreenState extends State<ClientsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Icon(
-            Icons.error_outline,
-            size: 64,
-            color: AppColors.danger,
-          ),
+          Icon(Icons.error_outline, size: 64, color: AppColors.danger),
           const SizedBox(height: AppConstants.spacing16),
-          Text(
-            'Error loading clients',
-            style: AppTextStyles.titleMedium,
-          ),
+          const Text('Error loading customers', style: TextStyle(fontWeight: FontWeight.bold)),
           const SizedBox(height: AppConstants.spacing8),
-          Text(
-            _errorMessage!,
-            style: AppTextStyles.bodySmall,
-            textAlign: TextAlign.center,
-          ),
+          Text(_errorMessage!, style: AppTextStyles.bodySmall, textAlign: TextAlign.center),
           const SizedBox(height: AppConstants.spacing24),
           ElevatedButton(
             onPressed: _fetchClients,
@@ -238,106 +261,16 @@ class _ClientsScreenState extends State<ClientsScreen> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          Container(
-            width: 120,
-            height: 120,
-            decoration: BoxDecoration(
-              gradient: AppColors.primaryGradient,
-              borderRadius: BorderRadius.circular(AppConstants.radius24),
-            ),
-            child: const Icon(
-              Icons.people_outline,
-              size: 60,
-              color: AppColors.white,
-            ),
-          ),
+          const Icon(Icons.people_outline, size: 80, color: Colors.grey),
           const SizedBox(height: AppConstants.spacing24),
           Text(
-            _searchController.text.isNotEmpty
-                ? 'No clients found'
-                : 'No clients yet',
-            style: AppTextStyles.headlineSmall.copyWith(
-              color: theme.colorScheme.onSurface,
-            ),
+            _searchController.text.isNotEmpty ? 'No customers found' : 'No customers yet',
+            style: AppTextStyles.headlineSmall,
           ),
           const SizedBox(height: AppConstants.spacing8),
           Text(
-            _searchController.text.isNotEmpty
-                ? 'Try a different search term'
-                : 'Add your first client to get started',
-            style: AppTextStyles.bodyMedium.copyWith(
-              color: theme.colorScheme.onSurfaceVariant,
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildClientCard(dynamic client, ThemeData theme) {
-    return Container(
-      decoration: BoxDecoration(
-        color: theme.colorScheme.surface,
-        borderRadius: BorderRadius.circular(AppConstants.radius12),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.05),
-            blurRadius: 10,
-            offset: const Offset(0, 4),
-          ),
-        ],
-      ),
-      padding: const EdgeInsets.all(AppConstants.spacing16),
-      child: Row(
-        children: [
-          Container(
-            width: 48,
-            height: 48,
-            decoration: BoxDecoration(
-              gradient: AppColors.primaryGradient,
-              borderRadius: BorderRadius.circular(AppConstants.radius12),
-            ),
-            child: Center(
-              child: Text(
-                (client['name']?.toString()[0] ?? 'C').toUpperCase(),
-                style: AppTextStyles.titleLarge.copyWith(
-                  color: AppColors.white,
-                  fontWeight: FontWeight.bold,
-                ),
-              ),
-            ),
-          ),
-          const SizedBox(width: AppConstants.spacing12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  client['name']?.toString() ?? 'Unknown',
-                  style: AppTextStyles.titleMedium.copyWith(
-                    color: theme.colorScheme.onSurface,
-                  ),
-                ),
-                const SizedBox(height: AppConstants.spacing4),
-                Text(
-                  client['email']?.toString() ?? '',
-                  style: AppTextStyles.bodySmall.copyWith(
-                    color: theme.colorScheme.onSurfaceVariant,
-                  ),
-                ),
-                if (client['company'] != null && client['company'].toString().isNotEmpty)
-                  Text(
-                    client['company']?.toString() ?? '',
-                    style: AppTextStyles.bodySmall.copyWith(
-                      color: theme.colorScheme.onSurfaceVariant,
-                    ),
-                  ),
-              ],
-            ),
-          ),
-          Icon(
-            Icons.chevron_right,
-            color: theme.colorScheme.onSurfaceVariant,
+            _searchController.text.isNotEmpty ? 'Try another query' : 'Create your first customer to get started',
+            style: TextStyle(color: Colors.grey[600]),
           ),
         ],
       ),

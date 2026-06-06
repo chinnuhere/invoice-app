@@ -9,6 +9,8 @@ import '../../widgets/custom_text_field.dart';
 import '../../ai/services/description_generation_service.dart';
 import '../../ai/providers/ai_provider.dart';
 import '../../ai/providers/openai_provider.dart';
+import '../../widgets/customer_picker_sheet.dart';
+import '../../widgets/item_picker_sheet.dart';
 
 class EditInvoiceScreen extends StatefulWidget {
   final Map<String, dynamic> invoice;
@@ -212,6 +214,47 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> {
     });
   }
 
+  Future<void> _selectClientBottomSheet() async {
+    final selected = await showModalBottomSheet<dynamic>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const CustomerPickerSheet(),
+    );
+
+    if (selected != null) {
+      setState(() {
+        _selectedClient = selected;
+      });
+    }
+  }
+
+  Future<void> _selectItemBottomSheet() async {
+    final selected = await showModalBottomSheet<dynamic>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (context) => const ItemPickerSheet(),
+    );
+
+    if (selected != null) {
+      final name = selected['name']?.toString() ?? '';
+      final price = double.tryParse(selected['price']?.toString() ?? '0.0') ?? 0.0;
+
+      setState(() {
+        _items.add({
+          'description': name,
+          'quantity': 1,
+          'unitPrice': price,
+        });
+        _descriptionControllers.add(TextEditingController(text: name));
+        _quantityControllers.add(TextEditingController(text: '1'));
+        _priceControllers.add(TextEditingController(text: price.toStringAsFixed(2)));
+        _calculateTotals();
+      });
+    }
+  }
+
   void _removeItem(int index) {
     if (_items.length > 1) {
       setState(() {
@@ -379,47 +422,40 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> {
                 ),
               ),
               const SizedBox(height: AppConstants.spacing8),
-              _isLoadingClients
-                  ? const Center(child: CircularProgressIndicator())
-                  : Container(
-                      decoration: BoxDecoration(
-                        color: theme.colorScheme.surface,
-                        borderRadius: BorderRadius.circular(AppConstants.radius12),
-                        border: Border.all(
-                          color: theme.colorScheme.outline.withOpacity(0.3),
-                        ),
-                      ),
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: AppConstants.spacing16,
-                        vertical: AppConstants.spacing4,
-                      ),
-                      child: DropdownButtonHideUnderline(
-                        child: DropdownButton<dynamic>(
-                          hint: Text(
-                            'Select a client',
-                            style: AppTextStyles.bodyMedium.copyWith(
-                              color: theme.colorScheme.onSurfaceVariant,
-                            ),
-                          ),
-                          value: _selectedClient,
-                          isExpanded: true,
-                          items: _clients.map((client) {
-                            return DropdownMenuItem<dynamic>(
-                              value: client,
-                              child: Text(
-                                client['name']?.toString() ?? 'Unknown',
-                                style: AppTextStyles.bodyMedium,
-                              ),
-                            );
-                          }).toList(),
-                          onChanged: (value) {
-                            setState(() {
-                              _selectedClient = value;
-                            });
-                          },
-                        ),
-                      ),
+              GestureDetector(
+                onTap: _selectClientBottomSheet,
+                child: Container(
+                  decoration: BoxDecoration(
+                    color: theme.colorScheme.surface,
+                    borderRadius: BorderRadius.circular(AppConstants.radius12),
+                    border: Border.all(
+                      color: theme.colorScheme.outline.withOpacity(0.3),
                     ),
+                  ),
+                  padding: const EdgeInsets.symmetric(
+                    horizontal: AppConstants.spacing16,
+                    vertical: AppConstants.spacing16,
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.person_outline, color: theme.colorScheme.primary),
+                      const SizedBox(width: AppConstants.spacing12),
+                      Expanded(
+                        child: Text(
+                          _selectedClient != null
+                              ? (_selectedClient['name']?.toString() ?? 'Selected Client')
+                              : 'Select a customer',
+                          style: AppTextStyles.bodyMedium.copyWith(
+                            fontWeight: _selectedClient != null ? FontWeight.bold : FontWeight.normal,
+                            color: _selectedClient != null ? theme.colorScheme.onSurface : theme.colorScheme.onSurfaceVariant,
+                          ),
+                        ),
+                      ),
+                      const Icon(Icons.arrow_drop_down, color: Colors.grey),
+                    ],
+                  ),
+                ),
+              ),
               const SizedBox(height: AppConstants.spacing24),
 
               // Invoice Details
@@ -496,7 +532,7 @@ class _EditInvoiceScreenState extends State<EditInvoiceScreen> {
                     ),
                   ),
                   TextButton.icon(
-                    onPressed: _addItem,
+                    onPressed: _selectItemBottomSheet,
                     icon: const Icon(Icons.add),
                     label: const Text('Add Item'),
                   ),
